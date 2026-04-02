@@ -1,0 +1,298 @@
+from __future__ import annotations
+import numpy as np
+import numpy.typing as npt
+import cv2
+import torch
+from PIL import Image
+
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from typing import Any, TypeVar, Generic, Self
+
+from .ch_order import ChannelOrder
+from .binary_image import BinaryImage
+from .format import ImageFormats, ImageFormat
+
+T = TypeVar("T", np.ndarray, Image.Image, torch.Tensor)
+
+@dataclass(frozen=True)
+class ImageContainer(ABC, Generic[T]):
+    """
+    Base class for image containers.
+
+    Attributes
+    ----------
+    value: T
+        The image data (np.ndarray, Image.Image, etc.).
+    channel_order: ChannelOrder
+        The channel order of the image.
+    """
+    value: T
+    channel_order: ChannelOrder
+
+    def __post_init__(self) -> None:
+        """
+        Post initialize the image container.
+        """
+        self._validate_image()
+
+    @abstractmethod
+    def _validate_image(self) -> None:
+        """
+        Validate the image.
+        """
+
+    @property
+    @abstractmethod
+    def shape(self) -> tuple[int, int, int]:
+        """
+        Get the shape of the image.
+
+        Returns
+        -------
+        tuple[int, int, int]: The shape(height, width, channels) of the image.
+        """
+
+    @property
+    @abstractmethod
+    def w(self) -> int:
+        """
+        Get the width of the image.
+
+        Returns
+        -------
+        int: The width of the image.
+        """
+
+    @property
+    @abstractmethod
+    def h(self) -> int:
+        """
+        Get the height of the image.
+
+        Returns
+        -------
+        int: The height of the image.
+        """
+
+    @property
+    @abstractmethod
+    def size(self) -> tuple[int, int]:
+        """
+        Get the size(width, height) of the image.
+
+        Returns
+        -------
+        tuple[int, int]: The size(width, height) of the image.
+        """
+
+    @property
+    @abstractmethod
+    def ch(self) -> int:
+        """
+        Get the number of channels of the image.
+
+        Returns
+        -------
+        int: The number of channels of the image.
+        """
+
+    @abstractmethod
+    def crop(
+        self, 
+        crop_slice: tuple[slice, slice]
+        ) -> Self:
+        """
+        Crop the image.
+
+        Parameters:
+        ----------
+        crop_slice: tuple[slice, slice]
+            The slice to crop the image(y_slice, x_slice).
+            example: [100:200, 300:400]
+
+        Returns:
+        ----------
+        Self: The cropped image container.
+        """
+
+    @abstractmethod
+    def _to_array(self) -> np.ndarray:
+        """
+        Convert the image to a numpy array.
+
+        Returns
+        -------
+        np.ndarray: The image as a numpy array.
+        """
+
+    @abstractmethod
+    def to_ch_swapped_image(
+        self,
+        output_order: ChannelOrder
+        ) -> ImageFormats:
+        """
+        Get the image with the channel order swapped.
+
+        Returns
+        -------
+        ImageFormats: The image with the channel order swapped.
+        """
+
+    @abstractmethod
+    def to_PIL(self) -> Image.Image:
+        """
+        Get the PIL image(RGB ordered).
+
+        Returns
+        -------
+        Image.Image: The PIL image.
+        """
+
+    @abstractmethod
+    def to_array(
+        self,
+        ch_order: ChannelOrder = ChannelOrder.BGR
+        ) -> np.ndarray:
+        """
+        Get the image with the array format in the specified channel order.
+
+        Returns
+        -------
+        np.ndarray: The array image.
+        """
+
+    @abstractmethod
+    def to_binary(self, threshold: int | float) -> BinaryImage:
+        """
+        Convert the image into a binary image using a threshold.
+
+        Values >= `threshold` become 1, otherwise 0.
+        If the input has 3 channels, it will be converted to gray first.
+        """
+
+    def _create_swapped_array(
+        self,
+        output_channel_order: ChannelOrder
+        ) -> np.ndarray:
+        """
+        Create the array with the output channel order.
+
+        Parameters:
+        ----------
+        output_channel_order: ChannelOrder
+            The output channel order to create the array.
+
+        Returns:
+        ----------
+        np.ndarray: The array with the output channel order.
+        """
+        array = self._to_array()
+
+        if output_channel_order == self.channel_order:
+            return array
+        elif output_channel_order == ChannelOrder.GRAY:
+            return cv2.cvtColor(array, cv2.COLOR_RGB2GRAY)
+        else:
+            if output_channel_order in [ChannelOrder.RGB, ChannelOrder.BGR] and self.channel_order in [ChannelOrder.RGB, ChannelOrder.BGR]:
+                return array[:, :, [2, 1, 0]]
+            else:
+                raise ValueError(f"Unsupported channel order: {self.channel_order} → {output_channel_order}")
+
+    def _convert_array_to_format(
+        self,
+        array: npt.NDArray[Any],
+        output_format: ImageFormat
+        ) -> ImageFormats:
+        """
+        Convert the array to the output format.
+
+        Parameters:
+        ----------
+        array: np.ndarray
+            The array to convert.
+        output_format: ImageType
+            The output format to convert to.
+
+        Returns:
+        ----------
+        ImageFormats: The converted image.
+        """
+        match output_format:
+            case ImageFormat.ARRAY:
+                return array
+            case ImageFormat.PIL:
+                return Image.fromarray(array)
+            case ImageFormat.TORCH_TENSOR:
+                return torch.from_numpy(array)  # pyright: ignore[reportUnknownMemberType]
+
+    def __str__(self) -> str:
+        return f"{self.__class__.__name__}(shape={self.shape}, w={self.w}, h={self.h})"
+
+    @classmethod
+    @abstractmethod
+    def from_path(
+        cls,
+        image_path: str
+        ) -> Self:
+        """
+        Create an image container from an image path.
+
+        Parameters:
+        ----------
+        image_path: str
+            The path to the image.
+
+        Returns:
+        ----------
+        Self: The image container.
+        """
+
+    @classmethod
+    def register(
+        cls,
+        image: ImageFormats,
+        channel_order: ChannelOrder
+        ) -> ImageContainer[np.ndarray] | ImageContainer[Image.Image]:
+        """
+        Register the image container.
+
+        Parameters:
+        ----------
+        image: ImageFormats
+            The image to register.
+        channel_order: ChannelOrder
+            The channel order of the image.
+
+        Returns:
+        ----------
+        ImageContainer[np.ndarray] | ImageContainer[Image.Image]:
+            The registered image container.
+        """
+        if isinstance(image, np.ndarray):
+            from .containers.array import ArrayImageContainer
+            return ArrayImageContainer(
+                value=image,
+                channel_order=channel_order
+                )
+        elif isinstance(image, Image.Image):
+            from .containers.pil import PILImageContainer
+            return PILImageContainer(
+                value=image,
+                channel_order=channel_order
+                )
+        raise ValueError(f"Unsupported image type: {type(image)}")
+
+    @abstractmethod
+    def save(
+        self,
+        save_path: str
+        ) -> None:
+        """
+        Save the image to a path.
+        
+        Parameters:
+        ----------
+        save_path: str
+            The path to save the image.
+        """
