@@ -31,4 +31,4 @@ Homepage = "https://github.com/ry-yoshida-private/ImageContainer"
 where = ["src"]
 
 [tool.setuptools.package-data]
-container = ["py.typed"]
+image_container = ["py.typed"]

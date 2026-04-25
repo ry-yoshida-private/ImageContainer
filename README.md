@@ -2,10 +2,10 @@
 
 ## Overview
 
-ImageContainer (`container`) is a Python package that provides a unified interface for image data.
+ImageContainer (`image_container`) is a Python package that provides a unified interface for image data.
 It supports NumPy arrays and PIL images with explicit channel order handling (RGB, BGR, GRAY).
 
-For module details, see [src/container/README.md](src/container/README.md).
+For module details, see [src/image_container/README.md](src/image_container/README.md).
 
 ## Installation
 
@@ -35,7 +35,7 @@ After installing the package, import it from any directory:
 ```python
 from PIL import Image
 
-from container import ChannelOrder, ImageContainer
+from image_container import ChannelOrder, ImageContainer
 
 image = Image.open("image.png")
 
