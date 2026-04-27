@@ -106,7 +106,7 @@ class ArrayImageContainer(ImageContainer[np.ndarray]):
         
         Returns
         -------
-        tuple[int, int]: The size(width, height) of the image.
+        tuple[int, int]: The size(height, width) of the image.
         """
         return self.shape[:2]
 
