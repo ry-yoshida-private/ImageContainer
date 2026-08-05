@@ -187,7 +187,7 @@ class ImageContainer(ABC, Generic[T]):
         cls,
         image: ImageFormats,
         channel_order: ChannelOrder
-        ) -> ImageContainer[UInt8Image] | ImageContainer[Image.Image]:
+        ) -> ImageContainer[UInt8Image] | ImageContainer[Image.Image] | ImageContainer[torch.Tensor]:
         """
         Register the image container.
 
@@ -200,7 +200,7 @@ class ImageContainer(ABC, Generic[T]):
 
         Returns:
         ----------
-        ImageContainer[UInt8Image] | ImageContainer[Image.Image]:
+        ImageContainer[UInt8Image] | ImageContainer[Image.Image] | ImageContainer[torch.Tensor]:
             The registered image container.
         """
         if isinstance(image, np.ndarray):
@@ -215,7 +215,12 @@ class ImageContainer(ABC, Generic[T]):
                 value=image,
                 channel_order=channel_order
                 )
-        raise ValueError(f"Unsupported image type: {type(image)}")
+        else:
+            from .containers.tensor import TensorImageContainer
+            return TensorImageContainer(
+                value=image,
+                channel_order=channel_order
+                )
 
     @abstractmethod
     def save(

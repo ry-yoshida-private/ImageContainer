@@ -10,8 +10,9 @@ from .ch_order import ChannelOrder
 from .format import ImageFormat
 from .iterator import ImageIterator
 from .containers import (
-    ArrayImageContainer, 
-    PILImageContainer
+    ArrayImageContainer,
+    PILImageContainer,
+    TensorImageContainer,
     )
 
 __all__ = [
@@ -30,4 +31,5 @@ __all__ = [
     "ImageIterator",
     "ArrayImageContainer",
     "PILImageContainer",
+    "TensorImageContainer",
 ]

@@ -4,6 +4,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+import torch
 from PIL import Image
 
 
@@ -37,6 +38,18 @@ def gray_pil_image(rng: np.random.Generator) -> Image.Image:
     """Grayscale PIL image (64x32)."""
     array = rng.integers(0, 256, size=(32, 64), dtype=np.uint8)
     return Image.fromarray(array, mode="L")
+
+
+@pytest.fixture
+def bgr_tensor(bgr_array: np.ndarray) -> torch.Tensor:
+    """BGR uint8 tensor, shaped (3, 32, 64)."""
+    return torch.from_numpy(np.ascontiguousarray(bgr_array.transpose(2, 0, 1)))
+
+
+@pytest.fixture
+def gray_tensor(gray_array: np.ndarray) -> torch.Tensor:
+    """Grayscale uint8 tensor, shaped (1, 32, 64)."""
+    return torch.from_numpy(gray_array).unsqueeze(0)
 
 
 @pytest.fixture
