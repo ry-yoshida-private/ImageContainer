@@ -148,6 +148,12 @@ class TensorImageContainer(ImageContainer[torch.Tensor]):
         RGB<->BGR stays on the tensor's own device (a channel flip); every
         other conversion goes through OpenCV on the CPU and back.
 
+        An order already matching the stored one is answered with the stored
+        tensor itself rather than a copy of it. A container is frozen and its
+        tensor is never written through, so the copy protected nothing, while
+        a decoded frame is megabytes and this is asked for it several times per
+        frame -- once for the detector, once per downstream crop batch.
+
         Parameters:
         ----------
         output_order: ChannelOrder
@@ -158,7 +164,7 @@ class TensorImageContainer(ImageContainer[torch.Tensor]):
         torch.Tensor: The channel swapped image, shaped (C, H, W).
         """
         if self.channel_order == output_order:
-            return self.value.clone()
+            return self.value
         if {self.channel_order, output_order} == _FLIPPABLE_ORDERS:
             return self.value.flip(0)
         hwc = self.to_array(output_order)
