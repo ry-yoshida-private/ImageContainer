@@ -5,12 +5,15 @@ from PIL import Image
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import TypeVar, Generic, Self
+from typing import TYPE_CHECKING, TypeVar, Generic, Self
 
 from .ch_order import ChannelOrder
 from .binary_image import BinaryImage
 from .format import ImageFormats
 from .types import UInt8Image
+
+if TYPE_CHECKING:
+    from .containers import ImageContainerType
 
 T = TypeVar("T", UInt8Image, Image.Image, torch.Tensor)
 
@@ -187,7 +190,7 @@ class ImageContainer(ABC, Generic[T]):
         cls,
         image: ImageFormats,
         channel_order: ChannelOrder
-        ) -> ImageContainer[UInt8Image] | ImageContainer[Image.Image] | ImageContainer[torch.Tensor]:
+        ) -> ImageContainerType:
         """
         Register the image container.
 
@@ -200,7 +203,7 @@ class ImageContainer(ABC, Generic[T]):
 
         Returns:
         ----------
-        ImageContainer[UInt8Image] | ImageContainer[Image.Image] | ImageContainer[torch.Tensor]:
+        ImageContainerType:
             The registered image container.
         """
         if isinstance(image, np.ndarray):

@@ -11,6 +11,7 @@ from .format import ImageFormat
 from .iterator import ImageIterator
 from .containers import (
     ArrayImageContainer,
+    ImageContainerType,
     PILImageContainer,
     TensorImageContainer,
     )
@@ -30,6 +31,7 @@ __all__ = [
     "ImageFormat",
     "ImageIterator",
     "ArrayImageContainer",
+    "ImageContainerType",
     "PILImageContainer",
     "TensorImageContainer",
 ]
